@@ -125,6 +125,18 @@
     filter: brightness(1.1);
 }
 
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: none;
+}
+
+.btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--fg);
+    border: 1px solid var(--border);
+}
+
 #theme-toggle {
     background: var(--bg-elevated);
     color: var(--fg);
