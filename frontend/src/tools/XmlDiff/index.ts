@@ -1,5 +1,7 @@
 import { RunDiffTool } from '../../../wailsjs/go/main/App';
 import type { ToolDef } from '../registry';
+import { renderDiffView } from '../../components/diffViewer';
+import { renderDiffSummary } from '../../components/diffSummary';
 
 function mount(container: HTMLElement) {
     container.innerHTML = `
@@ -11,21 +13,30 @@ function mount(container: HTMLElement) {
             <div class="tool-actions">
                 <button id="xmldiff-run" class="btn">Compare</button>
             </div>
-            <pre id="xmldiff-output" class="tool-output"></pre>
+            <p id="xmldiff-summary" class="diff-summary"></p>
+            <div id="xmldiff-viewer" class="diff-viewer"></div>
             <p id="xmldiff-error" class="tool-error"></p>
         </div>
     `;
 
     const left = container.querySelector<HTMLTextAreaElement>('#xmldiff-left')!;
     const right = container.querySelector<HTMLTextAreaElement>('#xmldiff-right')!;
-    const output = container.querySelector<HTMLElement>('#xmldiff-output')!;
+    const summary = container.querySelector<HTMLElement>('#xmldiff-summary')!;
+    const viewer = container.querySelector<HTMLElement>('#xmldiff-viewer')!;
     const error = container.querySelector<HTMLElement>('#xmldiff-error')!;
 
     container.querySelector('#xmldiff-run')!.addEventListener('click', async () => {
         error.textContent = '';
-        output.textContent = '';
+        summary.innerHTML = '';
+        viewer.innerHTML = '';
         try {
-            output.textContent = await RunDiffTool('xmldiff', left.value, right.value);
+            const result = await RunDiffTool('xmldiff', left.value, right.value);
+            if (result.trim() === 'No differences.') {
+                summary.textContent = 'No differences.';
+                return;
+            }
+            const counts = renderDiffView(viewer, result, 'xml');
+            renderDiffSummary(summary, counts);
         } catch (err) {
             error.textContent = String(err);
         }

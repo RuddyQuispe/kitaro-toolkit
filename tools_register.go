@@ -5,6 +5,7 @@ package main
 import (
 	_ "kitaro-rq/internal/tools/jsondiff"
 	_ "kitaro-rq/internal/tools/jsonfmt"
+	_ "kitaro-rq/internal/tools/jsontocsv"
 	_ "kitaro-rq/internal/tools/xmldiff"
 	_ "kitaro-rq/internal/tools/xmlfmt"
 )

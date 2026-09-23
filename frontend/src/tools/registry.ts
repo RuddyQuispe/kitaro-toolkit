@@ -3,6 +3,7 @@ import { xmlFormatterTool } from './XmlFormatter';
 import { jsonDiffTool } from './JsonDiff';
 import { xmlDiffTool } from './XmlDiff';
 import { sqlFormatterTool } from './SqlFormatter';
+import { jsonToCsvTool } from './JsonToCsv';
 
 export interface ToolDef {
     id: string;
@@ -18,4 +19,5 @@ export const toolRegistry: ToolDef[] = [
     jsonDiffTool,
     xmlDiffTool,
     sqlFormatterTool,
+    jsonToCsvTool,
 ];

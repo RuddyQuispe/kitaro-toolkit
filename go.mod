@@ -6,6 +6,7 @@ require (
 	github.com/beevik/etree v1.8.0
 	github.com/wailsapp/wails/v2 v2.16.0
 	github.com/yudai/gojsondiff v1.0.0
+	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82
 )
 
 require (
@@ -36,7 +37,6 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
-	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect

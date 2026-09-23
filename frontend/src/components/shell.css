@@ -152,3 +152,61 @@
     color: #ff6b6b;
     font-size: 0.85rem;
 }
+
+.diff-summary {
+    flex: none;
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+.diff-summary .count-add {
+    color: #2f9e44;
+}
+
+.diff-summary .count-del {
+    color: #e03131;
+}
+
+.diff-summary .count-chg {
+    color: #f08c00;
+}
+
+.diff-viewer {
+    flex: 1;
+    min-height: 6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-elevated);
+}
+
+.diff-viewer .cm-editor {
+    height: 100%;
+}
+
+/* Diff line highlighting — kept subtle so syntax-highlighted tokens stay
+   readable on top, in both themes. */
+:root[data-theme='dark'] .cm-diff-add {
+    background: rgba(47, 158, 68, 0.18);
+}
+
+:root[data-theme='dark'] .cm-diff-del {
+    background: rgba(224, 49, 49, 0.18);
+}
+
+:root[data-theme='dark'] .cm-diff-chg {
+    background: rgba(240, 140, 0, 0.16);
+}
+
+:root[data-theme='light'] .cm-diff-add {
+    background: rgba(47, 158, 68, 0.14);
+}
+
+:root[data-theme='light'] .cm-diff-del {
+    background: rgba(224, 49, 49, 0.14);
+}
+
+:root[data-theme='light'] .cm-diff-chg {
+    background: rgba(240, 140, 0, 0.14);
+}
