@@ -1,3 +1,4 @@
+import './shell.css';
 import { toolRegistry } from '../tools/registry';
 import { initTheme, toggleTheme, type Theme } from '../theme/useTheme';
 
@@ -26,15 +27,20 @@ export async function renderShell(root: HTMLElement) {
         return;
     }
 
+    const tabButtons: HTMLButtonElement[] = [];
+
     toolRegistry.forEach((tool, i) => {
         const btn = document.createElement('button');
         btn.className = 'tab-btn';
         btn.textContent = tool.label;
         btn.addEventListener('click', () => {
+            tabButtons.forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
             content.innerHTML = '';
             tool.mount(content);
         });
         tabs.appendChild(btn);
+        tabButtons.push(btn);
         if (i === 0) btn.click();
     });
 }

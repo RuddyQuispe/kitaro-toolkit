@@ -1,0 +1,154 @@
+* {
+    box-sizing: border-box;
+}
+
+.shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    color: var(--fg);
+}
+
+.shell-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    flex: none;
+}
+
+.shell-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.shell-tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem 0;
+    border-bottom: 1px solid var(--border);
+    flex: none;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--fg);
+    opacity: 0.6;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.tab-btn:hover {
+    opacity: 0.85;
+}
+
+.tab-btn.active {
+    opacity: 1;
+    border-bottom-color: var(--accent);
+}
+
+.shell-content {
+    flex: 1;
+    min-height: 0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.empty-state {
+    opacity: 0.6;
+}
+
+/* Shared tool panel layout: input area grows, output area grows below it. */
+.tool-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tool-input {
+    flex: 1;
+    min-height: 8rem;
+    resize: none;
+    background: var(--bg-elevated);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+}
+
+.diff-panel .diff-inputs {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
+    min-height: 8rem;
+}
+
+.diff-panel .diff-inputs .tool-input {
+    flex: 1;
+}
+
+.tool-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: none;
+}
+
+.tool-actions select {
+    background: var(--bg-elevated);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+}
+
+.btn {
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+}
+
+#theme-toggle {
+    background: var(--bg-elevated);
+    color: var(--fg);
+    padding: 0.35rem 0.6rem;
+}
+
+.tool-output {
+    flex: 1;
+    min-height: 6rem;
+    margin: 0;
+    overflow: auto;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.tool-error {
+    flex: none;
+    margin: 0;
+    color: #ff6b6b;
+    font-size: 0.85rem;
+}
