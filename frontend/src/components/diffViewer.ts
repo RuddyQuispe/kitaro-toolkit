@@ -3,6 +3,7 @@ import { EditorState, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, type DecorationSet } from '@codemirror/view';
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
+import { showMinimap } from '@replit/codemirror-minimap';
 
 export type DiffLang = 'json' | 'xml';
 
@@ -59,11 +60,23 @@ export interface DiffSummary {
  * highlighting for added/removed/changed lines. Returns the counts so the
  * caller can render a "N differences found" summary.
  */
+// Same palette as the .count-add/.count-del/.count-chg summary text and the
+// (translucent) .cm-diff-add/del/chg line backgrounds in shell.css, but at
+// full opacity since minimap gutter marks are only a couple pixels tall.
+const MINIMAP_COLORS = { add: '#2f9e44', remove: '#e03131', change: '#f08c00' } as const;
+
 export function renderDiffView(container: HTMLElement, raw: string, lang: DiffLang): DiffSummary {
     container.innerHTML = '';
 
     const lines = parseDiffLines(raw);
     const summary: DiffSummary = { added: 0, removed: 0, changed: 0 };
+
+    const minimapGutters: Record<number, string> = {};
+    lines.forEach((line, i) => {
+        if (line.marker === '+') minimapGutters[i + 1] = MINIMAP_COLORS.add;
+        else if (line.marker === '-') minimapGutters[i + 1] = MINIMAP_COLORS.remove;
+        else if (line.marker === '~') minimapGutters[i + 1] = MINIMAP_COLORS.change;
+    });
 
     const view = new EditorView({
         state: EditorState.create({
@@ -73,6 +86,28 @@ export function renderDiffView(container: HTMLElement, raw: string, lang: DiffLa
                 langExtension(lang),
                 EditorView.editable.of(false),
                 diffDecorationsField,
+                showMinimap.compute(['doc'], () => ({
+                    create: () => ({ dom: document.createElement('div') }),
+                    displayText: 'blocks',
+                    showOverlay: 'always',
+                    gutters: [minimapGutters],
+                    eventHandlers: {
+                        // Click anywhere on the minimap to jump straight to that
+                        // line in the main editor — the point of the minimap is
+                        // fast navigation to a difference, not just an overview.
+                        click: (e, v) => {
+                            const target = e.currentTarget as HTMLElement;
+                            const rect = target.getBoundingClientRect();
+                            const ratio = (e.clientY - rect.top) / rect.height;
+                            const lineNumber = Math.max(
+                                1,
+                                Math.min(v.state.doc.lines, Math.round(ratio * v.state.doc.lines)),
+                            );
+                            const pos = v.state.doc.line(lineNumber).from;
+                            v.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'center' }) });
+                        },
+                    },
+                })),
                 EditorView.theme({
                     '&': { height: '100%', fontSize: '0.85rem', backgroundColor: 'transparent', color: 'var(--fg)' },
                     '.cm-scroller': { overflow: 'auto', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
