@@ -1,3 +1,4 @@
+import { historyTool } from './History';
 import { jsonFormatterTool } from './JsonFormatter';
 import { xmlFormatterTool } from './XmlFormatter';
 import { jsonDiffTool } from './JsonDiff';
@@ -51,4 +52,5 @@ export const toolRegistry: ToolDef[] = [
     { ...jsonQueryToSqlTool, category: 'JSON' },
     { ...sqlToJsonQueryTool, category: 'SQL' },
     { ...jsonToCsvTool, category: 'JSON' },
+    { ...historyTool, category: 'History' },
 ];
