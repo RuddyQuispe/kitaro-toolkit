@@ -1,19 +1,19 @@
-# README
+# kitaro-toolkit
 
-## About
-
-This is the official Wails Vanilla-TS template.
-
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+"Kitaro Toolkit" is a desktop app for formatting text and converting it from one format to another.
 
 ## Live Development
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+Run `wails dev` in the project directory. This starts a Vite dev server with hot reload for the
+frontend. A dev server also runs on http://localhost:34115 so you can call the Go methods from the
+browser devtools.
 
 ## Building
 
-To build a redistributable, production mode package, use `wails build`.
+Run `wails build` to build a redistributable production package.
+
+On Linux distributions that only ship webkit2gtk-4.1 (e.g. Ubuntu 24.04+), add the build tag:
+
+```sh
+wails build -tags webkit2_41
+```
