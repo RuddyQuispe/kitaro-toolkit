@@ -1,5 +1,6 @@
 import { format, type SqlLanguage } from 'sql-formatter';
 import type { ToolDef } from '../registry';
+import { createCodeEditor } from '../../components/codeEditor';
 
 // sql-formatter's dialect keys: Oracle is "plsql" (not "oracle"), SQL Server
 // is "transactsql" (aliased from "tsql"). Verified against the installed
@@ -16,30 +17,35 @@ function mount(container: HTMLElement) {
 
     container.innerHTML = `
         <div class="tool-panel">
-            <textarea id="sqlfmt-input" class="tool-input" placeholder="Paste SQL here..."></textarea>
+            <div id="sqlfmt-input" class="tool-input"></div>
             <div class="tool-actions">
                 <select id="sqlfmt-dialect">${options}</select>
                 <button id="sqlfmt-run" class="btn">Format</button>
             </div>
-            <pre id="sqlfmt-output" class="tool-output"></pre>
+            <div id="sqlfmt-output" class="tool-output"></div>
             <p id="sqlfmt-error" class="tool-error"></p>
         </div>
     `;
 
-    const input = container.querySelector<HTMLTextAreaElement>('#sqlfmt-input')!;
+    const input = createCodeEditor(container.querySelector<HTMLElement>('#sqlfmt-input')!, { lang: 'sql', placeholder: 'Paste SQL here...' });
     const dialect = container.querySelector<HTMLSelectElement>('#sqlfmt-dialect')!;
-    const output = container.querySelector<HTMLElement>('#sqlfmt-output')!;
+    const output = createCodeEditor(container.querySelector<HTMLElement>('#sqlfmt-output')!, { lang: 'sql', readOnly: true });
     const error = container.querySelector<HTMLElement>('#sqlfmt-error')!;
 
     container.querySelector('#sqlfmt-run')!.addEventListener('click', () => {
         error.textContent = '';
-        output.textContent = '';
+        output.setValue('');
         try {
-            output.textContent = format(input.value, { language: dialect.value as SqlLanguage });
+            output.setValue(format(input.getValue(), { language: dialect.value as SqlLanguage }));
         } catch (err) {
             error.textContent = String(err);
         }
     });
+
+    return () => {
+        input.destroy();
+        output.destroy();
+    };
 }
 
 export const sqlFormatterTool: ToolDef = { id: 'sqlfmt', label: 'SQL Formatter', mount };
