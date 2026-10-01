@@ -34,6 +34,10 @@ export function RunTool(arg1, arg2, arg3) {
   return window['go']['main']['App']['RunTool'](arg1, arg2, arg3);
 }
 
+export function SaveFile(arg1, arg2) {
+  return window['go']['main']['App']['SaveFile'](arg1, arg2);
+}
+
 export function SetFontSize(arg1) {
   return window['go']['main']['App']['SetFontSize'](arg1);
 }

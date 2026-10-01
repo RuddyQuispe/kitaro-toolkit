@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
 	"kitaro-toolkit/internal/config"
 	"kitaro-toolkit/internal/history"
 	"kitaro-toolkit/internal/tools"
@@ -132,4 +134,23 @@ func (a *App) SetFontSize(size int) error {
 	}
 	cfg.FontSize = config.ClampFontSize(size)
 	return config.Save(cfg)
+}
+
+// SaveFile opens a native "Save As" dialog defaulting to defaultFilename and
+// writes content to the chosen path. Returns "" (no error) if the user
+// cancels the dialog.
+func (a *App) SaveFile(defaultFilename string, content string) (string, error) {
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		DefaultFilename: defaultFilename,
+	})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
 }

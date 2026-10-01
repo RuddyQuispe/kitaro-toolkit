@@ -19,6 +19,8 @@ export function RunDiffTool(arg1:string,arg2:string,arg3:string):Promise<string>
 
 export function RunTool(arg1:string,arg2:string,arg3:Record<string, string>):Promise<string>;
 
+export function SaveFile(arg1:string,arg2:string):Promise<string>;
+
 export function SetFontSize(arg1:number):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;
