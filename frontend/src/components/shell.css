@@ -238,6 +238,22 @@
     font-size: 0.85rem;
 }
 
+.tool-hint {
+    flex: none;
+    margin-left: auto;
+    font-size: 0.8rem;
+    opacity: 0.65;
+}
+
+.history-nav-btn {
+    padding: 0.45rem 0.7rem;
+}
+
+.history-nav-status {
+    font-size: 0.8rem;
+    opacity: 0.65;
+}
+
 .diff-summary {
     flex: none;
     margin: 0;
