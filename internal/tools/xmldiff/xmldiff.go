@@ -17,7 +17,7 @@ import (
 	"github.com/beevik/etree"
 	lcs "github.com/yudai/golcs"
 
-	"kitaro-rq/internal/tools"
+	"kitaro-toolkit/internal/tools"
 )
 
 func init() {

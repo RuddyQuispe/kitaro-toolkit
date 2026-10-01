@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"kitaro-rq/internal/config"
-	"kitaro-rq/internal/tools"
+	"kitaro-toolkit/internal/config"
+	"kitaro-toolkit/internal/tools"
 )
 
 // App struct

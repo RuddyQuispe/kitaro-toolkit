@@ -15,12 +15,38 @@ func defaultConfig() Config {
 	return Config{Theme: "dark"}
 }
 
-func path() (string, error) {
-	dir, err := os.UserConfigDir()
+// AppDirName is the per-user directory holding all persisted app state.
+const AppDirName = "kitaro-toolkit"
+
+// legacyAppDirName is the directory used before the rename to Kitaro Toolkit.
+const legacyAppDirName = "kitaro-rq"
+
+// AppDir returns the app's directory inside the user config dir, moving the
+// legacy directory there first so existing config and history survive.
+func AppDir() (string, error) {
+	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "kitaro-rq", "config.json"), nil
+	return appDirIn(base), nil
+}
+
+func appDirIn(base string) string {
+	dir := filepath.Join(base, AppDirName)
+	legacy := filepath.Join(base, legacyAppDirName)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		// Best effort: on failure the app simply starts with fresh state.
+		_ = os.Rename(legacy, dir)
+	}
+	return dir
+}
+
+func path() (string, error) {
+	dir, err := AppDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "config.json"), nil
 }
 
 // Load reads the config file, creating it with defaults if it doesn't exist.

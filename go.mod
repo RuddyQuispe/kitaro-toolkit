@@ -1,4 +1,4 @@
-module kitaro-rq
+module kitaro-toolkit
 
 go 1.25.0
 

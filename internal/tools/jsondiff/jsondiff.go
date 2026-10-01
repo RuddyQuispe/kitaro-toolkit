@@ -10,7 +10,7 @@ import (
 	diff "github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
 
-	"kitaro-rq/internal/tools"
+	"kitaro-toolkit/internal/tools"
 )
 
 func init() {

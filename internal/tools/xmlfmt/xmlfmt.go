@@ -8,7 +8,7 @@ import (
 
 	"github.com/beevik/etree"
 
-	"kitaro-rq/internal/tools"
+	"kitaro-toolkit/internal/tools"
 )
 
 func init() {

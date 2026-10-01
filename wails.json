@@ -1,11 +1,14 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "kitaro-rq",
-  "outputfilename": "kitaro-rq",
+  "name": "kitaro-toolkit",
+  "outputfilename": "kitaro-toolkit",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "info": {
+    "productName": "Kitaro Toolkit"
+  },
   "author": {
     "name": "Ruddy Quispe",
     "email": "rquispe@tesabiz.com"

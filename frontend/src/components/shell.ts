@@ -6,7 +6,7 @@ export async function renderShell(root: HTMLElement) {
     root.innerHTML = `
         <div class="shell">
             <header class="shell-header">
-                <span class="shell-title">kitaro-rq</span>
+                <span class="shell-title">Kitaro Toolkit</span>
                 <button id="theme-toggle" class="btn">🌓</button>
             </header>
             <nav id="shell-tabs" class="shell-tabs"></nav>
