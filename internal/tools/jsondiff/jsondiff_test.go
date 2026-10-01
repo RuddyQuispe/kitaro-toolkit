@@ -49,6 +49,24 @@ func TestRun(t *testing.T) {
 			right:   `{"a":}`,
 			wantErr: true,
 		},
+		{
+			name:       "identical top-level arrays have no diff",
+			left:       `[1,2,3]`,
+			right:      `[1,2,3]`,
+			wantNoDiff: true,
+		},
+		{
+			name:        "modified top-level array",
+			left:        `[{"id":1},{"id":2}]`,
+			right:       `[{"id":1},{"id":3}]`,
+			wantContain: []string{"2", "3"},
+		},
+		{
+			name:    "comparing an object with an array errors",
+			left:    `{"a":1}`,
+			right:   `[1,2,3]`,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

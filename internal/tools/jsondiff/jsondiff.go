@@ -19,24 +19,41 @@ func init() {
 
 // Run compares left and right JSON documents and returns a human-readable
 // ASCII diff (lines prefixed with + / -), or "No differences." if they are
-// structurally equal.
+// structurally equal. Both top-level JSON objects and top-level JSON arrays
+// are supported.
 func Run(left, right string) (string, error) {
-	differ := diff.New()
-	d, err := differ.Compare([]byte(left), []byte(right))
-	if err != nil {
+	var leftValue, rightValue interface{}
+	if err := json.Unmarshal([]byte(left), &leftValue); err != nil {
 		return "", fmt.Errorf("invalid JSON: %w", err)
+	}
+	if err := json.Unmarshal([]byte(right), &rightValue); err != nil {
+		return "", fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	differ := diff.New()
+	var d diff.Diff
+	switch leftTyped := leftValue.(type) {
+	case map[string]interface{}:
+		rightTyped, ok := rightValue.(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("cannot compare a JSON object with a JSON %T", rightValue)
+		}
+		d = differ.CompareObjects(leftTyped, rightTyped)
+	case []interface{}:
+		rightTyped, ok := rightValue.([]interface{})
+		if !ok {
+			return "", fmt.Errorf("cannot compare a JSON array with a JSON %T", rightValue)
+		}
+		d = differ.CompareArrays(leftTyped, rightTyped)
+	default:
+		return "", fmt.Errorf("invalid JSON: top-level value must be an object or an array")
 	}
 
 	if !d.Modified() {
 		return "No differences.", nil
 	}
 
-	var leftJSON map[string]interface{}
-	if err := json.Unmarshal([]byte(left), &leftJSON); err != nil {
-		return "", fmt.Errorf("invalid JSON: %w", err)
-	}
-
-	f := formatter.NewAsciiFormatter(leftJSON, formatter.AsciiFormatterConfig{
+	f := formatter.NewAsciiFormatter(leftValue, formatter.AsciiFormatterConfig{
 		ShowArrayIndex: true,
 	})
 	out, err := f.Format(d)
