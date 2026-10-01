@@ -1,11 +1,10 @@
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, type DecorationSet } from '@codemirror/view';
-import { json } from '@codemirror/lang-json';
-import { xml } from '@codemirror/lang-xml';
 import { showMinimap } from '@replit/codemirror-minimap';
+import { editorTheme, langExtension } from './codeEditor';
 
-export type DiffLang = 'json' | 'xml';
+export type DiffLang = 'json' | 'xml' | 'sql';
 
 interface DiffLine {
     marker: '+' | '-' | '~' | ' ';
@@ -43,10 +42,6 @@ const diffDecorationsField = StateField.define<DecorationSet>({
     provide: (f) => EditorView.decorations.from(f),
 });
 
-function langExtension(lang: DiffLang) {
-    return lang === 'xml' ? xml() : json();
-}
-
 /** Counts of each diff marker across the parsed lines. */
 export interface DiffSummary {
     added: number;
@@ -65,8 +60,20 @@ export interface DiffSummary {
 // full opacity since minimap gutter marks are only a couple pixels tall.
 const MINIMAP_COLORS = { add: '#2f9e44', remove: '#e03131', change: '#f08c00' } as const;
 
-export function renderDiffView(container: HTMLElement, raw: string, lang: DiffLang): DiffSummary {
+// One live EditorView per container. Clearing a container with innerHTML
+// only detaches the view's DOM; its listeners, observers and the minimap
+// keep the whole editor alive, so every view must be destroy()ed.
+const views = new WeakMap<HTMLElement, EditorView>();
+
+/** Destroys the diff view rendered into `container` (if any) and empties it. */
+export function destroyDiffView(container: HTMLElement): void {
+    views.get(container)?.destroy();
+    views.delete(container);
     container.innerHTML = '';
+}
+
+export function renderDiffView(container: HTMLElement, raw: string, lang: DiffLang): DiffSummary {
+    destroyDiffView(container);
 
     const lines = parseDiffLines(raw);
     const summary: DiffSummary = { added: 0, removed: 0, changed: 0 };
@@ -108,17 +115,12 @@ export function renderDiffView(container: HTMLElement, raw: string, lang: DiffLa
                         },
                     },
                 })),
-                EditorView.theme({
-                    '&': { height: '100%', fontSize: '0.85rem', backgroundColor: 'transparent', color: 'var(--fg)' },
-                    '.cm-scroller': { overflow: 'auto', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
-                    '.cm-gutters': { backgroundColor: 'transparent', color: 'var(--fg)', opacity: 0.5, border: 'none' },
-                    '.cm-activeLine': { backgroundColor: 'transparent' },
-                    '.cm-activeLineGutter': { backgroundColor: 'transparent' },
-                }),
+                editorTheme,
             ],
         }),
         parent: container,
     });
+    views.set(container, view);
 
     const builder: { from: number; to: number; mark: typeof diffLineMark }[] = [];
     let pos = 0;

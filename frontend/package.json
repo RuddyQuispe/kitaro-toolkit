@@ -9,12 +9,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "happy-dom": "^20.14.5",
     "typescript": "^5.6.3",
     "vite": "^7.0.0",
     "vitest": "^5.0.1"
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-sql": "^6.10.0",
     "@codemirror/lang-xml": "^6.1.0",
     "@codemirror/language": "^6.12.4",
     "@codemirror/lint": "^6.9.7",

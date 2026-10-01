@@ -72,17 +72,19 @@
     gap: 0.75rem;
 }
 
+/* Inputs and outputs host a CodeMirror editor (see components/codeEditor.ts),
+   which owns font, padding and scrolling inside the box. */
 .tool-input {
     flex: 1;
     min-height: 8rem;
-    resize: none;
+    /* Isolate the (possibly multi-MB) editor from page layout, so unrelated
+       DOM updates don't relayout it. */
+    contain: strict;
+    overflow: hidden;
     background: var(--bg-elevated);
     color: var(--fg);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 0.75rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.9rem;
 }
 
 .diff-panel .diff-inputs {
@@ -155,16 +157,22 @@
 .tool-output {
     flex: 1;
     min-height: 6rem;
-    margin: 0;
-    overflow: auto;
+    contain: strict;
+    overflow: hidden;
     background: var(--bg-elevated);
+    color: var(--fg);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 0.75rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.85rem;
-    white-space: pre-wrap;
-    word-break: break-word;
+}
+
+.tool-input .cm-editor,
+.tool-output .cm-editor {
+    height: 100%;
+}
+
+.cm-editor .cm-placeholder {
+    color: var(--fg);
+    opacity: 0.5;
 }
 
 .tool-error {
