@@ -111,6 +111,15 @@
     padding: 0.4rem 0.6rem;
 }
 
+/* Some engines (e.g. WebKitGTK) render the native option popup using the
+   OS/browser default scheme rather than color-scheme alone, so the closed
+   box picks up --bg-elevated/--fg but the open list stays light. Style
+   options explicitly to keep both in sync. */
+.tool-actions select option {
+    background: var(--bg-elevated);
+    color: var(--fg);
+}
+
 .btn {
     background: var(--accent);
     color: #ffffff;

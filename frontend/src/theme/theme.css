@@ -4,6 +4,7 @@
     --fg: #d4d4d4;
     --border: #3c3c3c;
     --accent: #4fa8ff;
+    color-scheme: dark;
 }
 
 :root[data-theme='light'] {
@@ -12,6 +13,7 @@
     --fg: #1e1e1e;
     --border: #d0d0d0;
     --accent: #0066cc;
+    color-scheme: light;
 }
 
 body {
