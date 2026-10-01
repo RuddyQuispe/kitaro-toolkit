@@ -6,6 +6,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed all:frontend/dist
@@ -28,6 +29,10 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
+		// Disable WebKitGTK hardware acceleration: this is a text-only tool
+		// kept open all day, and the GPU process plus its buffers cost far
+		// more resident memory than software rendering needs here.
+		Linux: &linux.Options{WebviewGpuPolicy: linux.WebviewGpuPolicyNever},
 	})
 
 	if err != nil {
