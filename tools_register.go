@@ -8,6 +8,7 @@ import (
 	_ "kitaro-toolkit/internal/tools/jsonquerytosql"
 	_ "kitaro-toolkit/internal/tools/jsontocsv"
 	_ "kitaro-toolkit/internal/tools/sqldiff"
+	_ "kitaro-toolkit/internal/tools/sqltojsonquery"
 	_ "kitaro-toolkit/internal/tools/xmldiff"
 	_ "kitaro-toolkit/internal/tools/xmlfmt"
 )

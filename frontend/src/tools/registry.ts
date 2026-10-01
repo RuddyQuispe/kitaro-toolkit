@@ -5,6 +5,7 @@ import { xmlDiffTool } from './XmlDiff';
 import { sqlFormatterTool } from './SqlFormatter';
 import { sqlDiffTool } from './SqlDiff';
 import { jsonQueryToSqlTool } from './JsonQueryToSql';
+import { sqlToJsonQueryTool } from './SqlToJsonQuery';
 import { jsonToCsvTool } from './JsonToCsv';
 import type { history } from '../../wailsjs/go/models';
 
@@ -48,5 +49,6 @@ export const toolRegistry: ToolDef[] = [
     { ...sqlFormatterTool, category: 'SQL' },
     { ...sqlDiffTool, category: 'SQL' },
     { ...jsonQueryToSqlTool, category: 'JSON' },
+    { ...sqlToJsonQueryTool, category: 'SQL' },
     { ...jsonToCsvTool, category: 'JSON' },
 ];
