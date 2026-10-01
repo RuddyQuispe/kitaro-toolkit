@@ -254,6 +254,70 @@
     opacity: 0.65;
 }
 
+.table-wrap {
+    flex: 1;
+    min-height: 6rem;
+    overflow: auto;
+    /* Same isolation for the result table. */
+    contain: strict;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.data-table th,
+.data-table td {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+/* Stick the whole thead (header + filter rows) as one block. Sticking each
+   th at top: 0 stacks both rows at the same offset, so the filter row
+   covers the header row while scrolling. */
+.data-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg-elevated);
+    /* border-collapse borders don't travel with sticky cells; draw the
+       separator with a shadow instead. */
+    box-shadow: 0 1px 0 var(--border);
+}
+
+.data-table thead th {
+    background: var(--bg-elevated);
+    font-weight: 700;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: rgba(127, 127, 127, 0.06);
+}
+
+.table-more {
+    display: block;
+    margin: 0.5rem auto;
+}
+
+.data-table .filter-input {
+    width: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+    font-family: inherit;
+}
+
 .diff-summary {
     flex: none;
     margin: 0;
