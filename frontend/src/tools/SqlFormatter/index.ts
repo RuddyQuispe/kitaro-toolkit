@@ -4,8 +4,8 @@ import { createCodeEditor } from '../../components/codeEditor';
 
 // sql-formatter's dialect keys: Oracle is "plsql" (not "oracle"), SQL Server
 // is "transactsql" (aliased from "tsql"). Verified against the installed
-// package's dialectNameMap — there is no "oracle" key.
-const DIALECTS: Record<string, SqlLanguage> = {
+// package's dialectNameMap — there is no "oracle" key. Shared with SQL Diff.
+export const DIALECTS: Record<string, SqlLanguage> = {
     Oracle: 'plsql',
     'SQL Server': 'transactsql',
 };

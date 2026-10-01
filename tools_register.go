@@ -6,6 +6,7 @@ import (
 	_ "kitaro-toolkit/internal/tools/jsondiff"
 	_ "kitaro-toolkit/internal/tools/jsonfmt"
 	_ "kitaro-toolkit/internal/tools/jsontocsv"
+	_ "kitaro-toolkit/internal/tools/sqldiff"
 	_ "kitaro-toolkit/internal/tools/xmldiff"
 	_ "kitaro-toolkit/internal/tools/xmlfmt"
 )
