@@ -1,6 +1,8 @@
 import './shell.css';
 import { toolRegistry } from '../tools/registry';
 import { initTheme, toggleTheme, type Theme } from '../theme/useTheme';
+import { initFontZoom } from './fontZoom';
+import { SetFontSize } from '../../wailsjs/go/main/App';
 
 export async function renderShell(root: HTMLElement) {
     root.innerHTML = `
@@ -15,6 +17,7 @@ export async function renderShell(root: HTMLElement) {
     `;
 
     let theme: Theme = await initTheme();
+    initFontZoom(SetFontSize);
     document.getElementById('theme-toggle')!.addEventListener('click', async () => {
         theme = await toggleTheme(theme);
     });

@@ -1,3 +1,8 @@
+:root {
+    /* Shared editor font size; updated at runtime by components/fontZoom.ts. */
+    --editor-font-size: 14px;
+}
+
 :root[data-theme='dark'] {
     --bg: #1e1e1e;
     --bg-elevated: #252526;
