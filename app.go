@@ -122,3 +122,14 @@ func (a *App) SetTheme(theme string) error {
 	cfg.Theme = theme
 	return config.Save(cfg)
 }
+
+// SetFontSize persists the editor font size in px, clamped to the supported
+// range.
+func (a *App) SetFontSize(size int) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	cfg.FontSize = config.ClampFontSize(size)
+	return config.Save(cfg)
+}

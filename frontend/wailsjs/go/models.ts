@@ -2,6 +2,7 @@ export namespace config {
 	
 	export class Config {
 	    theme: string;
+	    fontSize: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -10,6 +11,7 @@ export namespace config {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.theme = source["theme"];
+	        this.fontSize = source["fontSize"];
 	    }
 	}
 

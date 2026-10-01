@@ -6,13 +6,27 @@ import (
 	"path/filepath"
 )
 
+// Editor font size bounds (px), shared by every input/output/diff editor.
+// The frontend (components/fontZoom.ts) uses the same range.
+const (
+	DefaultFontSize = 14
+	MinFontSize     = 10
+	MaxFontSize     = 32
+)
+
 // Config holds user preferences persisted across sessions.
 type Config struct {
-	Theme string `json:"theme"` // "dark" or "light"
+	Theme    string `json:"theme"`    // "dark" or "light"
+	FontSize int    `json:"fontSize"` // editor font size in px
 }
 
 func defaultConfig() Config {
-	return Config{Theme: "dark"}
+	return Config{Theme: "dark", FontSize: DefaultFontSize}
+}
+
+// ClampFontSize bounds size to [MinFontSize, MaxFontSize].
+func ClampFontSize(size int) int {
+	return max(MinFontSize, min(MaxFontSize, size))
 }
 
 // AppDirName is the per-user directory holding all persisted app state.
@@ -65,10 +79,13 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	var cfg Config
+	// Start from defaults so fields missing from older config files (e.g.
+	// fontSize) keep their default instead of the zero value.
+	cfg := defaultConfig()
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return Config{}, err
 	}
+	cfg.FontSize = ClampFontSize(cfg.FontSize)
 	return cfg, nil
 }
 
