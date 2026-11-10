@@ -49,6 +49,20 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
+			name:  "orderBy as a plain string (legacy format)",
+			input: `{"select":["u.USER_LOGIN"],"from":["M_USER_MOBILE um","T_USER u"],"where":["um.USER_ID = u.USER_ID","u.USER_LOGIN = :userLogin"],"orderBy":"u.USER_LOGIN ASC","other":"oracle"}`,
+			wantOrder: []string{
+				"FROM M_USER_MOBILE um, T_USER u",
+				"WHERE (um.USER_ID = u.USER_ID) AND (u.USER_LOGIN = :userLogin)",
+				"ORDER BY u.USER_LOGIN ASC",
+			},
+		},
+		{
+			name:    "orderBy that is neither string nor array errors",
+			input:   `{"select":["a"],"from":["T"],"orderBy":1}`,
+			wantErr: true,
+		},
+		{
 			name: "unionAll chains two selects and orderBy lands at the very end",
 			input: `{
 				"select":["a"],"from":["T1"],
@@ -82,6 +96,75 @@ func TestRun(t *testing.T) {
 				"FROM T3",
 				"ORDER BY a",
 			},
+		},
+		{
+			name:  "cte renders WITH before the main select",
+			input: `{"cte":{"name":"P","definition":{"select":["x"],"from":["T1"]}},"select":["x"],"from":["P"]}`,
+			wantOrder: []string{
+				"WITH P AS (SELECT x FROM T1)",
+				" SELECT x",
+				"FROM P",
+			},
+		},
+		{
+			name:        "innerJoin with alias and several on conditions",
+			input:       `{"select":["a"],"from":["T1 a",{"innerJoin":"T2","name":"b","on":["a.id = b.id","b.x = 1"]}]}`,
+			wantContain: []string{"FROM T1 a INNER JOIN T2 b ON a.id = b.id AND b.x = 1"},
+		},
+		{
+			name:        "leftJoin without alias nor on",
+			input:       `{"select":["a"],"from":["T1",{"leftJoin":"T2"}]}`,
+			wantContain: []string{"FROM T1 LEFT JOIN T2"},
+		},
+		{
+			name: "full example with cte, joins and nested conditions",
+			input: `{
+				"cte":{"name":"PARTICIPANT_TOTAL","definition":{
+					"select":["DISPERSION.CLIENT_PARAMETER_ID","SUM(DC.AMOUNT) AS AMOUNT"],
+					"from":["COM_DISPERSION DISPERSION",
+						{"innerJoin":"COM_CLIENT","name":"CLIENT","on":["CLIENT.CLIENT_ID = DISPERSION.CLIENT_ID"]}],
+					"where":["DISPERSION.DISPERSION_ID = :dispersionId"],
+					"groupBy":["DISPERSION.CLIENT_PARAMETER_ID"]}},
+				"select":["TOTAL.AMOUNT"],
+				"from":["PARTICIPANT_TOTAL TOTAL",
+					{"leftJoin":"HISTORY_PARTICIPANT","name":"HISTORY_PARTICIPANT","on":["HISTORY_PARTICIPANT.ID = TOTAL.ID","(HISTORY_PARTICIPANT.END_DATE IS NULL OR HISTORY_PARTICIPANT.END_DATE > TOTAL.DATE_REGISTER)"]}],
+				"orderBy":["TOTAL.ID ASC NULLS LAST"],
+				"other":"oracle"
+			}`,
+			wantOrder: []string{
+				"WITH PARTICIPANT_TOTAL AS (SELECT",
+				"INNER JOIN COM_CLIENT CLIENT ON CLIENT.CLIENT_ID = DISPERSION.CLIENT_ID",
+				"WHERE (DISPERSION.DISPERSION_ID = :dispersionId)",
+				"GROUP BY DISPERSION.CLIENT_PARAMETER_ID)",
+				" SELECT TOTAL.AMOUNT",
+				"FROM PARTICIPANT_TOTAL TOTAL LEFT JOIN HISTORY_PARTICIPANT HISTORY_PARTICIPANT ON HISTORY_PARTICIPANT.ID = TOTAL.ID AND (HISTORY_PARTICIPANT.END_DATE IS NULL OR",
+				"ORDER BY TOTAL.ID ASC NULLS LAST",
+			},
+		},
+		{
+			name:    "join object as first from item errors",
+			input:   `{"select":["a"],"from":[{"innerJoin":"T2","on":["x = y"]}]}`,
+			wantErr: true,
+		},
+		{
+			name:    "join object with two join keys errors",
+			input:   `{"select":["a"],"from":["T1",{"innerJoin":"T2","leftJoin":"T3"}]}`,
+			wantErr: true,
+		},
+		{
+			name:    "join object without join key errors",
+			input:   `{"select":["a"],"from":["T1",{"name":"b"}]}`,
+			wantErr: true,
+		},
+		{
+			name:    "cte without name errors",
+			input:   `{"cte":{"definition":{"select":["x"],"from":["T"]}},"select":["x"],"from":["P"]}`,
+			wantErr: true,
+		},
+		{
+			name:    "cte without definition errors",
+			input:   `{"cte":{"name":"P"},"select":["x"],"from":["P"]}`,
+			wantErr: true,
 		},
 		{
 			name:    "missing select errors",
