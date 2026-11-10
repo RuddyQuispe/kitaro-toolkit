@@ -1,6 +1,7 @@
 // Package sqltojsonquery converts a raw SQL statement into the "query JSON"
 // document shape used by internal/tools/jsonquerytosql (select/from/where/
-// groupBy/orderBy, with an optional recursively-nested unionAll). It is the
+// groupBy/orderBy, with an optional recursively-nested unionAll, an optional
+// leading WITH ... AS (...) cte and join objects inside from). It is the
 // reverse of that package: instead of assembling opaque fragments into SQL,
 // it splits SQL into fragments at the clause level. It never parses
 // expressions — only enough structure (parentheses, string literals, clause
@@ -20,12 +21,95 @@ func init() {
 }
 
 type queryJSON struct {
+	CTE      *cteJSON   `json:"cte,omitempty"`
 	Select   []string   `json:"select,omitempty"`
-	From     []string   `json:"from,omitempty"`
+	From     []fromItem `json:"from,omitempty"`
 	Where    []string   `json:"where,omitempty"`
 	GroupBy  []string   `json:"groupBy,omitempty"`
 	OrderBy  []string   `json:"orderBy,omitempty"`
 	UnionAll *queryJSON `json:"unionAll,omitempty"`
+}
+
+// cteJSON is a single "WITH <name> AS (<definition>)" common table
+// expression.
+type cteJSON struct {
+	Name       string     `json:"name"`
+	Definition *queryJSON `json:"definition"`
+}
+
+// fromItem is one from entry: a plain table (JoinKey empty, marshaled as a
+// JSON string) or a join, marshaled as {"<joinKey>": table, "name": alias,
+// "on": [...]} — the shape jsonquerytosql accepts.
+type fromItem struct {
+	JoinKey string
+	Table   string
+	Alias   string
+	On      []string
+}
+
+// joinPatterns lists the top-level join keyword sequences and their JSON
+// join key. Longer sequences come first so "LEFT JOIN" is never matched as
+// a bare "JOIN" with a dangling "LEFT" on the previous table.
+var joinPatterns = []struct {
+	words []string
+	key   string
+}{
+	{[]string{"INNER", "JOIN"}, "innerJoin"},
+	{[]string{"LEFT", "OUTER", "JOIN"}, "leftJoin"},
+	{[]string{"LEFT", "JOIN"}, "leftJoin"},
+	{[]string{"RIGHT", "OUTER", "JOIN"}, "rightJoin"},
+	{[]string{"RIGHT", "JOIN"}, "rightJoin"},
+	{[]string{"FULL", "OUTER", "JOIN"}, "fullJoin"},
+	{[]string{"FULL", "JOIN"}, "fullJoin"},
+	{[]string{"JOIN"}, "join"},
+}
+
+// MarshalJSON writes plain tables as strings and joins with the join key
+// first, then name and on (a map would sort the keys alphabetically).
+func (f fromItem) MarshalJSON() ([]byte, error) {
+	if f.JoinKey == "" {
+		return json.Marshal(f.Table)
+	}
+	var sb strings.Builder
+	key, _ := json.Marshal(f.JoinKey)
+	table, _ := json.Marshal(f.Table)
+	sb.WriteString("{" + string(key) + ":" + string(table))
+	if f.Alias != "" {
+		alias, _ := json.Marshal(f.Alias)
+		sb.WriteString(`,"name":` + string(alias))
+	}
+	if len(f.On) > 0 {
+		on, _ := json.Marshal(f.On)
+		sb.WriteString(`,"on":` + string(on))
+	}
+	sb.WriteString("}")
+	return []byte(sb.String()), nil
+}
+
+// UnmarshalJSON reads back what MarshalJSON writes.
+func (f *fromItem) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &f.Table); err == nil {
+		return nil
+	}
+	var obj struct {
+		Name string   `json:"name"`
+		On   []string `json:"on"`
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return err
+	}
+	f.Alias, f.On = obj.Name, obj.On
+	for _, p := range joinPatterns {
+		if v, ok := raw[p.key]; ok {
+			f.JoinKey = p.key
+			return json.Unmarshal(v, &f.Table)
+		}
+	}
+	return fmt.Errorf("from object without a join key")
 }
 
 // Run parses a raw SQL statement and returns the equivalent query JSON
@@ -39,7 +123,7 @@ func Run(input string, opts map[string]string) (string, error) {
 		return "", err
 	}
 
-	q, err := parseFull(sql)
+	q, err := parseStatement(sql)
 	if err != nil {
 		return "", err
 	}
@@ -88,6 +172,50 @@ func checkBalanced(sql string) error {
 		return fmt.Errorf("unbalanced parentheses in SQL")
 	}
 	return nil
+}
+
+// parseStatement parses an optional leading "WITH <name> AS (<query>)"
+// into q.CTE, then the main query. Only one CTE is supported, matching the
+// forward tool's single "cte" object.
+func parseStatement(sql string) (*queryJSON, error) {
+	withEnd, hasWith := matchKeywordAt(sql, 0, []string{"WITH"})
+	if !hasWith {
+		return parseFull(sql)
+	}
+
+	// 1. Name, AS and the parenthesized definition.
+	i := skipSpace(sql, withEnd)
+	nameStart := i
+	for i < len(sql) && isWordChar(sql[i]) {
+		i++
+	}
+	name := sql[nameStart:i]
+	asStart := skipSpace(sql, i)
+	asEnd, hasAs := matchKeywordAt(sql, asStart, []string{"AS"})
+	open := skipSpace(sql, asEnd)
+	if name == "" || !hasAs || open >= len(sql) || sql[open] != '(' {
+		return nil, fmt.Errorf("WITH must have the form: WITH <name> AS (<query>)")
+	}
+	closeIdx, err := matchingParen(sql, open)
+	if err != nil {
+		return nil, err
+	}
+	definition, err := parseFull(strings.TrimSpace(sql[open+1 : closeIdx]))
+	if err != nil {
+		return nil, fmt.Errorf("cte %q: %w", name, err)
+	}
+
+	// 2. The main query after the CTE.
+	rest := strings.TrimSpace(sql[closeIdx+1:])
+	if strings.HasPrefix(rest, ",") {
+		return nil, fmt.Errorf("only one CTE is supported in WITH")
+	}
+	q, err := parseFull(rest)
+	if err != nil {
+		return nil, err
+	}
+	q.CTE = &cteJSON{Name: name, Definition: definition}
+	return q, nil
 }
 
 // parseFull splits sql on top-level UNION ALL into branches, peels the
@@ -289,7 +417,7 @@ func parseBranch(branch string) (*queryJSON, error) {
 
 	q := &queryJSON{
 		Select: splitTopLevelComma(selectClause),
-		From:   splitTopLevelComma(fromClause),
+		From:   splitFrom(fromClause),
 	}
 	if hasWhere {
 		where, err := splitWhere(whereClause)
@@ -302,6 +430,84 @@ func parseBranch(branch string) (*queryJSON, error) {
 		q.GroupBy = splitTopLevelComma(groupByClause)
 	}
 	return q, nil
+}
+
+// splitFrom splits a FROM clause body on top-level join keywords. The text
+// before the first join, and anything after a top-level comma inside a join
+// segment, are plain tables (comma-separated, as before).
+func splitFrom(s string) []fromItem {
+	patterns := make([][]string, len(joinPatterns))
+	for i, p := range joinPatterns {
+		patterns[i] = p.words
+	}
+
+	// 1. Cut the clause at every top-level join keyword.
+	type segment struct {
+		key  string
+		text string
+	}
+	var segments []segment
+	key, last := "", 0
+	for {
+		start, end, idx, found := findFirstTopLevelAny(s, last, patterns)
+		if !found {
+			break
+		}
+		segments = append(segments, segment{key, s[last:start]})
+		key, last = joinPatterns[idx].key, end
+	}
+	segments = append(segments, segment{key, s[last:]})
+
+	// 2. Turn every segment into from items.
+	var items []fromItem
+	for _, seg := range segments {
+		parts := splitTopLevelComma(seg.text)
+		if seg.key != "" && len(parts) > 0 {
+			items = append(items, parseJoin(seg.key, parts[0]))
+			parts = parts[1:]
+		}
+		for _, p := range parts {
+			items = append(items, fromItem{Table: p})
+		}
+	}
+	return items
+}
+
+// parseJoin splits "<table> [[AS] alias] [ON cond AND cond]" into a join
+// item. ON is split on top-level AND; when it has a top-level OR it can't
+// be AND-joined, so it's kept as one condition wrapped in parens.
+func parseJoin(key, s string) fromItem {
+	item := fromItem{JoinKey: key}
+	target := s
+	if onStart, onEnd, found := findFirstTopLevel(s, 0, []string{"ON"}); found {
+		target = s[:onStart]
+		on := normalizeWhitespace(s[onEnd:])
+		if _, _, hasOr := findFirstTopLevel(on, 0, []string{"OR"}); hasOr {
+			item.On = []string{"(" + on + ")"}
+		} else {
+			item.On = splitTopLevelWord(on, "AND")
+		}
+	}
+	item.Table, item.Alias = splitAlias(normalizeWhitespace(target))
+	return item
+}
+
+// splitAlias separates a trailing bare-identifier alias ("T a", "T AS a")
+// from the table. Anything else (a single name, "T USING (x)", a subquery
+// without alias) stays whole in table.
+func splitAlias(s string) (table, alias string) {
+	i := len(s)
+	for i > 0 && isWordChar(s[i-1]) {
+		i--
+	}
+	if i == len(s) || i == 0 || !isSpace(s[i-1]) {
+		return s, ""
+	}
+	table = strings.TrimSpace(s[:i])
+	if n := len(table); n > 3 && strings.EqualFold(table[n-3:], " AS") {
+		table = strings.TrimSpace(table[:n-3])
+	}
+	return table, s[i:]
 }
 
 // splitWhere splits a WHERE clause body on top-level AND. Top-level OR is
@@ -383,6 +589,13 @@ func isSpace(b byte) bool {
 	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 }
 
+func skipSpace(s string, pos int) int {
+	for pos < len(s) && isSpace(s[pos]) {
+		pos++
+	}
+	return pos
+}
+
 // matchKeywordAt tries to match the given sequence of words (e.g.
 // ["GROUP", "BY"]) starting at pos, case-insensitively, requiring at least
 // one whitespace run between words and a non-word character (or
@@ -436,6 +649,14 @@ func matchKeywordAtSkippingSpace(s string, pos int, word string) (start, end int
 // right after a previously-found top-level boundary), and returns the
 // first position where words matches at depth 0.
 func findFirstTopLevel(s string, startPos int, words []string) (start, end int, found bool) {
+	start, end, _, found = findFirstTopLevelAny(s, startPos, [][]string{words})
+	return start, end, found
+}
+
+// findFirstTopLevelAny is findFirstTopLevel for several keyword sequences:
+// at each depth-0 position it tries every sequence in order and returns
+// the first match plus the index of the sequence that matched.
+func findFirstTopLevelAny(s string, startPos int, patterns [][]string) (start, end, idx int, found bool) {
 	depth := 0
 	inString := false
 	for i := startPos; i < len(s); i++ {
@@ -462,12 +683,14 @@ func findFirstTopLevel(s string, startPos int, words []string) (start, end int, 
 			continue
 		}
 		if depth == 0 {
-			if end, ok := matchKeywordAt(s, i, words); ok {
-				return i, end, true
+			for pi, words := range patterns {
+				if end, ok := matchKeywordAt(s, i, words); ok {
+					return i, end, pi, true
+				}
 			}
 		}
 	}
-	return 0, 0, false
+	return 0, 0, 0, false
 }
 
 // splitTopLevelComma splits s on top-level commas (depth 0, outside string

@@ -18,6 +18,16 @@ func decode(t *testing.T, s string) queryJSON {
 	return q
 }
 
+// tables returns the Table of every from item, so tests that only use
+// plain tables can compare against a []string.
+func tables(items []fromItem) []string {
+	out := make([]string, len(items))
+	for i, it := range items {
+		out[i] = it.Table
+	}
+	return out
+}
+
 func TestRun_SimpleSelectFrom(t *testing.T) {
 	out, err := Run("SELECT a, b FROM t", nil)
 	if err != nil {
@@ -27,7 +37,7 @@ func TestRun_SimpleSelectFrom(t *testing.T) {
 	if !reflect.DeepEqual(q.Select, []string{"a", "b"}) {
 		t.Errorf("select = %v", q.Select)
 	}
-	if !reflect.DeepEqual(q.From, []string{"t"}) {
+	if !reflect.DeepEqual(tables(q.From), []string{"t"}) {
 		t.Errorf("from = %v", q.From)
 	}
 }
@@ -57,7 +67,7 @@ WHERE u.USER_ID = uc.USER_ID(+) AND u.ACCESS_TYPE = tp.PROFILE_ID AND uc.COMPANY
 		t.Errorf("select = %v", q.Select)
 	}
 	wantFrom := []string{"T_USER u", "T_USER_COMPANY uc", "T_PROFILE tp"}
-	if !reflect.DeepEqual(q.From, wantFrom) {
+	if !reflect.DeepEqual(tables(q.From), wantFrom) {
 		t.Errorf("from = %v", q.From)
 	}
 	wantWhere := []string{"u.USER_ID = uc.USER_ID(+)", "u.ACCESS_TYPE = tp.PROFILE_ID", "uc.COMPANY_ID = :companyId"}
@@ -78,14 +88,16 @@ WHERE CONCIL_LOTE.DETALLE = 'INICIO' AND CLIENT.CLIENT_ID = :clientIdentifier`
 	if len(q.Select) != 5 {
 		t.Errorf("select count = %d, want 5: %v", len(q.Select), q.Select)
 	}
-	// The whole join chain has no top-level comma (only commas inside NVL(...)
-	// which is in the select list, not the from clause), so it must stay as
-	// a single from element.
-	if len(q.From) != 1 {
-		t.Fatalf("from count = %d, want 1: %v", len(q.From), q.From)
+	// Each top-level join becomes its own from item; the AND inside an ON
+	// clause splits into separate on conditions.
+	want := []fromItem{
+		{Table: "CON_CONCILIACION_LOTE CONCIL_LOTE"},
+		{JoinKey: "innerJoin", Table: "T_SISTORIGEN", Alias: "SISORIGEN", On: []string{"SISORIGEN.CLIENT_ID = CONCIL_LOTE.ID_CLIENTE", "SISORIGEN.CODE = CONCIL_LOTE.SO"}},
+		{JoinKey: "innerJoin", Table: "M_CLIENT", Alias: "CLIENT", On: []string{"CONCIL_LOTE.ID_CLIENTE = CLIENT.CLIENT_ID"}},
+		{JoinKey: "leftJoin", Table: "T_DOMAIN", Alias: "EIFS", On: []string{"EIFS.DOMAIN_TBZ = 'EIFS'", "EIFS.DOM_VALUE = ACCOUNT.EFI"}},
 	}
-	if !strings.Contains(q.From[0], "inner join T_SISTORIGEN") || !strings.Contains(q.From[0], "left join T_DOMAIN") {
-		t.Errorf("from[0] missing expected join text: %q", q.From[0])
+	if !reflect.DeepEqual(q.From, want) {
+		t.Errorf("from = %+v", q.From)
 	}
 	// AND inside the ON clauses must NOT leak into the top-level where split.
 	if !reflect.DeepEqual(q.Where, []string{"CONCIL_LOTE.DETALLE = 'INICIO'", "CLIENT.CLIENT_ID = :clientIdentifier"}) {
@@ -159,16 +171,16 @@ func TestRun_UnionAllJavaStyleParenthesizedBranches(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	q := decode(t, out)
-	if !reflect.DeepEqual(q.From, []string{"t1"}) {
+	if !reflect.DeepEqual(tables(q.From), []string{"t1"}) {
 		t.Errorf("root from = %v", q.From)
 	}
 	if q.UnionAll == nil || q.UnionAll.UnionAll == nil {
 		t.Fatalf("expected a 2-level deep unionAll chain, got: %+v", q)
 	}
-	if !reflect.DeepEqual(q.UnionAll.From, []string{"t2"}) {
+	if !reflect.DeepEqual(tables(q.UnionAll.From), []string{"t2"}) {
 		t.Errorf("branch 2 from = %v", q.UnionAll.From)
 	}
-	if !reflect.DeepEqual(q.UnionAll.UnionAll.From, []string{"t3"}) {
+	if !reflect.DeepEqual(tables(q.UnionAll.UnionAll.From), []string{"t3"}) {
 		t.Errorf("branch 3 from = %v", q.UnionAll.UnionAll.From)
 	}
 	if !reflect.DeepEqual(q.OrderBy, []string{"a"}) {
@@ -183,7 +195,7 @@ func TestRun_UnionAllJavaStyleWithBranchAlias(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	q := decode(t, out)
-	if q.UnionAll == nil || !reflect.DeepEqual(q.UnionAll.From, []string{"t2"}) {
+	if q.UnionAll == nil || !reflect.DeepEqual(tables(q.UnionAll.From), []string{"t2"}) {
 		t.Errorf("branch from = %v", q.UnionAll)
 	}
 	if q.OrderBy != nil {
@@ -197,13 +209,13 @@ func TestRun_UnionAllTwoBranches_OrderByStaysAtRoot(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	q := decode(t, out)
-	if !reflect.DeepEqual(q.From, []string{"t1"}) {
+	if !reflect.DeepEqual(tables(q.From), []string{"t1"}) {
 		t.Errorf("root from = %v", q.From)
 	}
 	if q.UnionAll == nil {
 		t.Fatalf("expected unionAll, got nil")
 	}
-	if !reflect.DeepEqual(q.UnionAll.From, []string{"t2"}) {
+	if !reflect.DeepEqual(tables(q.UnionAll.From), []string{"t2"}) {
 		t.Errorf("unionAll from = %v", q.UnionAll.From)
 	}
 	if q.UnionAll.OrderBy != nil {
@@ -227,7 +239,7 @@ func TestRun_UnionAllThreeBranches_NestedChain(t *testing.T) {
 	if q.UnionAll.UnionAll.UnionAll != nil {
 		t.Errorf("expected chain to stop at depth 2")
 	}
-	if !reflect.DeepEqual(q.UnionAll.UnionAll.From, []string{"t3"}) {
+	if !reflect.DeepEqual(tables(q.UnionAll.UnionAll.From), []string{"t3"}) {
 		t.Errorf("deepest from = %v", q.UnionAll.UnionAll.From)
 	}
 }
@@ -244,6 +256,9 @@ func TestRun_Errors(t *testing.T) {
 		{"clauses out of order", "SELECT a FROM t GROUP BY a WHERE x = 1", "order"},
 		{"unbalanced parens", "SELECT a FROM t WHERE (x = 1", "parenthes"},
 		{"union without all", "SELECT a FROM t1 UNION SELECT a FROM t2", "UNION ALL"},
+		{"multiple ctes", "WITH a AS (SELECT x FROM t), b AS (SELECT y FROM u) SELECT x FROM a", "one CTE"},
+		{"cte without as", "WITH a (SELECT x FROM t) SELECT x FROM a", "WITH"},
+		{"cte without main select", "WITH a AS (SELECT x FROM t)", "SELECT"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -282,5 +297,86 @@ WHERE u.ACCESS_TYPE = tp.PROFILE_ID AND tp.COMPANY_ID = :companyId`
 
 	if !reflect.DeepEqual(q1, q2) {
 		t.Errorf("round trip mismatch:\nq1 = %+v\nq2 = %+v", q1, q2)
+	}
+}
+
+func TestRun_JoinKindsAliasesAndPlainTablesAfterJoins(t *testing.T) {
+	sql := `SELECT a FROM T1 a LEFT OUTER JOIN T2 AS b ON b.id = a.id RIGHT JOIN T3 ON T3.id = a.id FULL OUTER JOIN T4 d ON (d.x IS NULL OR d.x = a.x) JOIN T5 e ON e.id = a.id OR e.id IS NULL, T6 f`
+	out, err := Run(sql, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	q := decode(t, out)
+	want := []fromItem{
+		{Table: "T1 a"},
+		{JoinKey: "leftJoin", Table: "T2", Alias: "b", On: []string{"b.id = a.id"}},
+		{JoinKey: "rightJoin", Table: "T3", On: []string{"T3.id = a.id"}},
+		{JoinKey: "fullJoin", Table: "T4", Alias: "d", On: []string{"(d.x IS NULL OR d.x = a.x)"}},
+		// A top-level OR can't be expressed as AND-joined conditions, so the
+		// whole ON stays as one condition, wrapped to keep its meaning.
+		{JoinKey: "join", Table: "T5", Alias: "e", On: []string{"(e.id = a.id OR e.id IS NULL)"}},
+		{Table: "T6 f"},
+	}
+	if !reflect.DeepEqual(q.From, want) {
+		t.Errorf("from = %+v", q.From)
+	}
+}
+
+func TestRun_JoinJSONShape(t *testing.T) {
+	out, err := Run("SELECT a FROM T1 x INNER JOIN T2 y ON y.id = x.id", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, `"innerJoin": "T2",`) || !strings.Contains(out, `"name": "y",`) || !strings.Contains(out, `"on": [`) {
+		t.Errorf("unexpected JSON shape:\n%s", out)
+	}
+	if strings.Index(out, `"innerJoin"`) > strings.Index(out, `"name"`) {
+		t.Errorf("join key must come before name:\n%s", out)
+	}
+}
+
+func TestRun_CTE(t *testing.T) {
+	sql := `with P as (select x, SUM(y) AS Y from T1 where (T1.k = :k) group by x) select P.x from P order by P.x`
+	out, err := Run(sql, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	q := decode(t, out)
+	if q.CTE == nil || q.CTE.Name != "P" || q.CTE.Definition == nil {
+		t.Fatalf("cte = %+v", q.CTE)
+	}
+	d := q.CTE.Definition
+	if !reflect.DeepEqual(d.Select, []string{"x", "SUM(y) AS Y"}) || !reflect.DeepEqual(d.Where, []string{"T1.k = :k"}) || !reflect.DeepEqual(d.GroupBy, []string{"x"}) {
+		t.Errorf("cte definition = %+v", d)
+	}
+	if !reflect.DeepEqual(q.Select, []string{"P.x"}) || !reflect.DeepEqual(tables(q.From), []string{"P"}) || !reflect.DeepEqual(q.OrderBy, []string{"P.x"}) {
+		t.Errorf("main query = %+v", q)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(out), "{\n  \"cte\"") {
+		t.Errorf("cte must be the first key:\n%s", out)
+	}
+}
+
+func TestRun_RoundTripCTEAndJoins(t *testing.T) {
+	sql := `with PARTICIPANT_TOTAL as (select D.ID, SUM(C.AMOUNT) AS AMOUNT from COM_DISPERSION D inner join COM_CLIENT CLIENT on CLIENT.CLIENT_ID = D.CLIENT_ID where (D.DISPERSION_ID = :dispersionId) group by D.ID) select TOTAL.ID, (SELECT H.P FROM CFG C JOIN HIST H ON H.ID = C.ID WHERE C.X = TOTAL.ID ORDER BY C.Y NULLS LAST FETCH FIRST 1 ROWS ONLY) AS PERCENTAGE from PARTICIPANT_TOTAL TOTAL left join HISTORY_PARTICIPANT HP on HP.ID = TOTAL.ID and HP.START_DATE <= TOTAL.D and (HP.END_DATE IS NULL OR HP.END_DATE > TOTAL.D) order by TOTAL.ID ASC NULLS LAST`
+
+	out1, err := Run(sql, nil)
+	if err != nil {
+		t.Fatalf("first parse failed: %v", err)
+	}
+	forwardSQL, err := jsonquerytosql.Run(out1, nil)
+	if err != nil {
+		t.Fatalf("forward tool rejected generated JSON: %v\n%s", err, out1)
+	}
+	out2, err := Run(forwardSQL, nil)
+	if err != nil {
+		t.Fatalf("re-parsing forward-generated SQL failed: %v\nSQL was:\n%s", err, forwardSQL)
+	}
+	if out1 != out2 {
+		t.Errorf("round trip mismatch:\nout1 = %s\nout2 = %s", out1, out2)
+	}
+	q := decode(t, out1)
+	if len(q.From) != 2 || len(q.From[1].On) != 3 {
+		t.Errorf("main from = %+v", q.From)
 	}
 }
