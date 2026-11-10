@@ -10,6 +10,26 @@
     --border: #3c3c3c;
     --accent: #4fa8ff;
     color-scheme: dark;
+
+    /* Code editor palette: Tokyo Night. */
+    --editor-text: #c0caf5;
+    --editor-cursor: #c0caf5;
+    --editor-selection: #364a82;
+    --editor-panel-bg: #1f2335;
+    --tok-keyword: #bb9af7;
+    --tok-string: #9ece6a;
+    --tok-number: #ff9e64;
+    --tok-atom: #ff9e64;
+    --tok-property: #7aa2f7;
+    --tok-function: #7aa2f7;
+    --tok-type: #2ac3de;
+    --tok-variable: #c0caf5;
+    --tok-operator: #89ddff;
+    --tok-punctuation: #a9b1d6;
+    --tok-comment: #737aa2;
+    --tok-tag: #f7768e;
+    --tok-attribute: #bb9af7;
+    --tok-invalid: #f7768e;
 }
 
 :root[data-theme='light'] {
@@ -19,6 +39,26 @@
     --border: #d0d0d0;
     --accent: #0066cc;
     color-scheme: light;
+
+    /* Code editor palette: Tokyo Night Day. */
+    --editor-text: #3760bf;
+    --editor-cursor: #3760bf;
+    --editor-selection: #b7c1e3;
+    --editor-panel-bg: #e9e9ed;
+    --tok-keyword: #9854f1;
+    --tok-string: #587539;
+    --tok-number: #b15c00;
+    --tok-atom: #b15c00;
+    --tok-property: #2e7de9;
+    --tok-function: #2e7de9;
+    --tok-type: #07879d;
+    --tok-variable: #3760bf;
+    --tok-operator: #006a83;
+    --tok-punctuation: #6172b0;
+    --tok-comment: #848cb5;
+    --tok-tag: #f52a65;
+    --tok-attribute: #9854f1;
+    --tok-invalid: #f52a65;
 }
 
 body {
