@@ -61,6 +61,7 @@ var joinKeywords = map[string]string{
 	"leftJoin":  "LEFT JOIN",
 	"rightJoin": "RIGHT JOIN",
 	"fullJoin":  "FULL JOIN",
+	"crossJoin": "CROSS JOIN",
 	"join":      "JOIN",
 }
 
@@ -91,7 +92,7 @@ func (f *fromItem) UnmarshalJSON(data []byte) error {
 			continue
 		}
 		if f.JoinKeyword != "" {
-			return fmt.Errorf(`join object must have exactly one join key (innerJoin, leftJoin, rightJoin, fullJoin, join)`)
+			return fmt.Errorf(`join object must have exactly one join key (innerJoin, leftJoin, rightJoin, fullJoin, crossJoin, join)`)
 		}
 		if err := json.Unmarshal(raw, &f.Table); err != nil {
 			return fmt.Errorf("%q must be a string: %w", key, err)
@@ -99,7 +100,7 @@ func (f *fromItem) UnmarshalJSON(data []byte) error {
 		f.JoinKeyword = keyword
 	}
 	if f.JoinKeyword == "" {
-		return fmt.Errorf(`join object must have exactly one join key (innerJoin, leftJoin, rightJoin, fullJoin, join)`)
+		return fmt.Errorf(`join object must have exactly one join key (innerJoin, leftJoin, rightJoin, fullJoin, crossJoin, join)`)
 	}
 	if raw, ok := obj["name"]; ok {
 		if err := json.Unmarshal(raw, &f.Alias); err != nil {
@@ -110,6 +111,9 @@ func (f *fromItem) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(raw, &f.On); err != nil {
 			return fmt.Errorf(`join "on" must be an array of strings: %w`, err)
 		}
+	}
+	if f.JoinKeyword == "CROSS JOIN" && len(f.On) > 0 {
+		return fmt.Errorf(`"crossJoin" does not take "on" conditions`)
 	}
 	return nil
 }

@@ -61,6 +61,7 @@ var joinPatterns = []struct {
 	{[]string{"RIGHT", "JOIN"}, "rightJoin"},
 	{[]string{"FULL", "OUTER", "JOIN"}, "fullJoin"},
 	{[]string{"FULL", "JOIN"}, "fullJoin"},
+	{[]string{"CROSS", "JOIN"}, "crossJoin"},
 	{[]string{"JOIN"}, "join"},
 }
 

@@ -380,3 +380,29 @@ func TestRun_RoundTripCTEAndJoins(t *testing.T) {
 		t.Errorf("main from = %+v", q.From)
 	}
 }
+
+func TestRun_CrossJoin(t *testing.T) {
+	sql := `SELECT a FROM COM_DISPERSION D INNER JOIN COM_CLIENT_PARAMETER CP ON CP.ID = D.CP_ID CROSS JOIN CLIENT_EXTENDED cross join T3 c WHERE CLIENT_EXTENDED.CLIENT_ID = CP.CLIENT_ID`
+	out, err := Run(sql, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	q := decode(t, out)
+	want := []fromItem{
+		{Table: "COM_DISPERSION D"},
+		{JoinKey: "innerJoin", Table: "COM_CLIENT_PARAMETER", Alias: "CP", On: []string{"CP.ID = D.CP_ID"}},
+		{JoinKey: "crossJoin", Table: "CLIENT_EXTENDED"},
+		{JoinKey: "crossJoin", Table: "T3", Alias: "c"},
+	}
+	if !reflect.DeepEqual(q.From, want) {
+		t.Errorf("from = %+v", q.From)
+	}
+
+	forwardSQL, err := jsonquerytosql.Run(out, nil)
+	if err != nil {
+		t.Fatalf("forward tool rejected generated JSON: %v\n%s", err, out)
+	}
+	if out2, _ := Run(forwardSQL, nil); out2 != out {
+		t.Errorf("round trip mismatch:\nout1 = %s\nout2 = %s", out, out2)
+	}
+}

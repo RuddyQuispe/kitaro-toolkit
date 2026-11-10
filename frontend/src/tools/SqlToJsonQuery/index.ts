@@ -20,7 +20,7 @@ function mount(container: HTMLElement, ctx: ToolContext) {
         </div>
     `;
 
-    const input = createCodeEditor(container.querySelector<HTMLElement>('#sqltojsonquery-input')!, { lang: 'sql', placeholder: 'Paste SQL here (optional WITH <name> AS (...), SELECT/FROM with [INNER/LEFT/RIGHT/FULL] JOIN/WHERE/GROUP BY/ORDER BY, optional UNION ALL chain)...' });
+    const input = createCodeEditor(container.querySelector<HTMLElement>('#sqltojsonquery-input')!, { lang: 'sql', placeholder: 'Paste SQL here (optional WITH <name> AS (...), SELECT/FROM with [INNER/LEFT/RIGHT/FULL/CROSS] JOIN/WHERE/GROUP BY/ORDER BY, optional UNION ALL chain)...' });
     const output = createCodeEditor(container.querySelector<HTMLElement>('#sqltojsonquery-output')!, { lang: 'json', readOnly: true });
     const error = container.querySelector<HTMLElement>('#sqltojsonquery-error')!;
     const copyBtn = container.querySelector<HTMLButtonElement>('#sqltojsonquery-copy')!;

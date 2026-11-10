@@ -33,7 +33,7 @@ function mount(container: HTMLElement, ctx: ToolContext) {
         </div>
     `;
 
-    const input = createCodeEditor(container.querySelector<HTMLElement>('#jsonquerytosql-input')!, { lang: 'json', placeholder: 'Paste query JSON (cte/select/from with innerJoin|leftJoin|rightJoin|fullJoin|join objects/where/groupBy/orderBy/unionAll) here...' });
+    const input = createCodeEditor(container.querySelector<HTMLElement>('#jsonquerytosql-input')!, { lang: 'json', placeholder: 'Paste query JSON (cte/select/from with innerJoin|leftJoin|rightJoin|fullJoin|crossJoin|join objects/where/groupBy/orderBy/unionAll) here...' });
     const dialect = container.querySelector<HTMLSelectElement>('#jsonquerytosql-dialect')!;
     const output = createCodeEditor(container.querySelector<HTMLElement>('#jsonquerytosql-output')!, { lang: 'sql', readOnly: true });
     const error = container.querySelector<HTMLElement>('#jsonquerytosql-error')!;

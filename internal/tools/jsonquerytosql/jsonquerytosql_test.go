@@ -142,6 +142,16 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
+			name:        "crossJoin with and without alias",
+			input:       `{"select":["a"],"from":["T1 a",{"crossJoin":"CLIENT_EXTENDED"},{"crossJoin":"T3","name":"c"},{"innerJoin":"T4","name":"d","on":["d.id = a.id"]}]}`,
+			wantContain: []string{"FROM T1 a CROSS JOIN CLIENT_EXTENDED CROSS JOIN T3 c INNER JOIN T4 d ON d.id = a.id"},
+		},
+		{
+			name:    "crossJoin with on errors",
+			input:   `{"select":["a"],"from":["T1",{"crossJoin":"T2","on":["x = y"]}]}`,
+			wantErr: true,
+		},
+		{
 			name:    "join object as first from item errors",
 			input:   `{"select":["a"],"from":[{"innerJoin":"T2","on":["x = y"]}]}`,
 			wantErr: true,
